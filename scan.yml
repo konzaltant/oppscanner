@@ -1,0 +1,28 @@
+name: Opportunity scan
+on:
+  schedule:
+    - cron: "0 5 * * 1-5"   # 08:00 Nairobi time, weekdays
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - run: python scanner.py all
+        env:
+          SCORER: keywords   # change to claude later and add the ANTHROPIC_API_KEY secret
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
+          DIGEST_TO: john.weru@konzaltant.com
+      - name: Save seen lists
+        run: |
+          git config user.name "scanner-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add seen_*.json || true
+          git commit -m "update seen" || echo "nothing to commit"
+          git push
